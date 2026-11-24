@@ -7,6 +7,7 @@ use Exception;
 use Generator;
 use InvalidArgumentException;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,6 +16,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Yireo\StockManagementCli\Stock\LegacyStockUpdater;
+use Yireo\StockManagementCli\Stock\MsiStockUpdater;
 use Yireo\StockManagementCli\Util\OutputSanitizer;
 
 class UpdateProductStockCommand extends Command
@@ -25,6 +27,7 @@ class UpdateProductStockCommand extends Command
     public function __construct(
         private readonly CollectionFactory $productCollectionFactory,
         private readonly LegacyStockUpdater $legacyStockUpdater,
+        private readonly MsiStockUpdater $msiStockUpdater,
         private readonly OutputSanitizer $outputSanitizer,
         ?string $name = null
     ) {
@@ -40,6 +43,7 @@ class UpdateProductStockCommand extends Command
         $this->addOption('force', null, InputOption::VALUE_NONE, 'Skip the confirmation when using --all');
         $this->addOption('manage_stock', null, InputOption::VALUE_REQUIRED, 'Manage stock (0 or 1)');
         $this->addOption('qty', null, InputOption::VALUE_REQUIRED, 'Quantity (number of 0 or higher)');
+        $this->addOption('source', null, InputOption::VALUE_REQUIRED, 'MSI source code for --qty (default: default)');
         parent::configure();
     }
 
@@ -53,6 +57,8 @@ class UpdateProductStockCommand extends Command
             if ($qty === null && $manageStock === null) {
                 throw new InvalidArgumentException('Nothing to update, use --qty and/or --manage_stock');
             }
+
+            $sourceCode = $this->getSourceCode($input, $qty);
         } catch (InvalidArgumentException $exception) {
             $output->writeln('<error>' . $this->outputSanitizer->sanitize($exception->getMessage()) . '</error>');
 
@@ -81,7 +87,13 @@ class UpdateProductStockCommand extends Command
             $label = $this->outputSanitizer->sanitize($sku . ' (' . $name . ')');
 
             try {
-                if (!$this->legacyStockUpdater->update($sku, $qty, $manageStock)) {
+                if ($sourceCode !== null && $qty !== null) {
+                    $this->msiStockUpdater->updateQty($sku, $sourceCode, $qty);
+                }
+
+                $legacyQty = $sourceCode === null ? $qty : null;
+                if (($legacyQty !== null || $manageStock !== null)
+                    && !$this->legacyStockUpdater->update($sku, $legacyQty, $manageStock)) {
                     $output->writeln('<comment>Skipping ' . $label . ': no stock item found</comment>');
                     $failed = true;
                     continue;
@@ -163,6 +175,35 @@ class UpdateProductStockCommand extends Command
         }
 
         return $manageStock === '1';
+    }
+
+    private function getSourceCode(InputInterface $input, ?float $qty): ?string
+    {
+        $sourceCode = $input->getOption('source');
+        if ($sourceCode !== null && $qty === null) {
+            throw new InvalidArgumentException('The option --source can only be used together with --qty');
+        }
+
+        if (!$this->msiStockUpdater->isAvailable()) {
+            if ($sourceCode !== null) {
+                throw new InvalidArgumentException('The option --source requires MSI (Magento_Inventory)');
+            }
+
+            return null;
+        }
+
+        if ($qty === null) {
+            return null;
+        }
+
+        $sourceCode = trim((string)($sourceCode ?? 'default'), self::TRIM_CHARACTERS);
+        try {
+            $this->msiStockUpdater->assertSourceExists($sourceCode);
+        } catch (NoSuchEntityException) {
+            throw new InvalidArgumentException('The MSI source "' . $sourceCode . '" does not exist');
+        }
+
+        return $sourceCode;
     }
 
     /**
