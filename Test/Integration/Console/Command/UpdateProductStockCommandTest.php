@@ -107,8 +107,8 @@ class UpdateProductStockCommandTest extends TestCase
 
         self::assertSame(Command::SUCCESS, $tester->execute(['sku' => self::SKU_A, '--manage_stock' => '0']));
         $stockItem = $this->stockItem(self::SKU_A);
-        self::assertFalse($stockItem->getManageStock());
-        self::assertFalse($stockItem->getUseConfigManageStock());
+        self::assertFalse((bool)$stockItem->getManageStock());
+        self::assertFalse((bool)$stockItem->getUseConfigManageStock());
     }
 
     public function testStockStatusFollowsQty(): void
