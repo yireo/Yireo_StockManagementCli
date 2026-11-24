@@ -4,5 +4,7 @@
     "sequence": [
         "Magento_Catalog",
         "Magento_CatalogInventory"
-    ]
+    ],
+    "phpcs_severity": "9",
+    "phpstan_level": "8"
 }
