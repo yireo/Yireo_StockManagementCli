@@ -4,9 +4,7 @@
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
             <argument name="commands" xsi:type="array">
-                <item name="Yireo_StockManagementCli::updateProductStock" xsi:type="object">
-                    Yireo\StockManagementCli\Console\Command\UpdateProductStockCommand
-                </item>
+                <item name="Yireo_StockManagementCli::updateProductStock" xsi:type="object">Yireo\StockManagementCli\Console\Command\UpdateProductStockCommand</item>
             </argument>
         </arguments>
     </type>
