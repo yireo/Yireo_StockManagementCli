@@ -1,5 +1,8 @@
 {
     "module_name": "Yireo_StockManagementCli",
     "composer_name": "yireo/module-stock-management-cli",
-    "sequence": []
+    "sequence": [
+        "Magento_Catalog",
+        "Magento_CatalogInventory"
+    ]
 }
