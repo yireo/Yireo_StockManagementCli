@@ -8,4 +8,11 @@
             </argument>
         </arguments>
     </type>
+
+    <type name="Yireo\StockManagementCli\Console\Command\UpdateProductStockCommand">
+        <arguments>
+            <argument name="legacyStockUpdater" xsi:type="object">Yireo\StockManagementCli\Stock\LegacyStockUpdater\Proxy</argument>
+            <argument name="msiStockUpdater" xsi:type="object">Yireo\StockManagementCli\Stock\MsiStockUpdater\Proxy</argument>
+        </arguments>
+    </type>
 </config>
