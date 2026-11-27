@@ -92,9 +92,14 @@ jobs:
           done
 
       - name: Setting up module variables
+        shell: bash
         run: |
-          echo "COMPOSER_NAME=$(jq -er '.name' composer.json)" >> "$GITHUB_ENV"
-          echo "MAGENTO_MODULE=$(jq -er '.module_name' MODULE.json)" >> "$GITHUB_ENV"
+          COMPOSER_NAME=$(jq -er '.name' composer.json)
+          MAGENTO_MODULE=$(jq -er '.module_name' MODULE.json)
+          [[ "$COMPOSER_NAME" =~ ^[a-z0-9_.-]+/[a-z0-9_.-]+$ ]] || { echo "::error::Invalid composer name"; exit 1; }
+          [[ "$MAGENTO_MODULE" =~ ^[A-Za-z0-9]+_[A-Za-z0-9]+$ ]] || { echo "::error::Invalid module name"; exit 1; }
+          echo "COMPOSER_NAME=$COMPOSER_NAME" >> "$GITHUB_ENV"
+          echo "MAGENTO_MODULE=$MAGENTO_MODULE" >> "$GITHUB_ENV"
 
       - name: Configure Composer
         env:
